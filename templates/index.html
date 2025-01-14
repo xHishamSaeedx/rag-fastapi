@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAG System Interface</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 150px;
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        resize: vertical;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #response {
+        margin-top: 20px;
+        padding: 10px;
+        border-left: 4px solid #4caf50;
+        background-color: #f9f9f9;
+      }
+      .error {
+        color: red;
+        margin-top: 10px;
+      }
+      .success {
+        color: green;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Process Text</h2>
+      <textarea
+        id="inputText"
+        placeholder="Enter your text content here..."
+      ></textarea>
+      <button onclick="processText()">Process Text</button>
+      <div id="processStatus"></div>
+    </div>
+
+    <div class="container">
+      <h2>Ask Questions</h2>
+      <textarea
+        id="questionInput"
+        placeholder="Ask a question about the processed text..."
+      ></textarea>
+      <button onclick="askQuestion()">Ask Question</button>
+      <div id="response"></div>
+    </div>
+
+    <script>
+      // Add backend URL constant
+      const BACKEND_URL = "http://localhost:8000";
+
+      async function processText() {
+        const text = document.getElementById("inputText").value;
+        const statusDiv = document.getElementById("processStatus");
+
+        if (!text) {
+          statusDiv.innerHTML =
+            '<p class="error">Please enter some text to process</p>';
+          return;
+        }
+
+        try {
+          statusDiv.innerHTML = "<p>Processing text...</p>";
+          const response = await fetch(`${BACKEND_URL}/process-text`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            mode: "cors",
+            credentials: "include",
+            body: JSON.stringify({ text: text }),
+          });
+
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            throw new Error("Failed to parse server response");
+          }
+
+          if (response.ok) {
+            statusDiv.innerHTML =
+              '<p class="success">Text processed successfully!</p>';
+          } else {
+            statusDiv.innerHTML = `<p class="error">Error: ${
+              data?.detail || "Unknown error occurred"
+            }</p>`;
+          }
+        } catch (error) {
+          statusDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+
+      async function askQuestion() {
+        const question = document.getElementById("questionInput").value;
+        const responseDiv = document.getElementById("response");
+
+        if (!question) {
+          responseDiv.innerHTML =
+            '<p class="error">Please enter a question</p>';
+          return;
+        }
+
+        try {
+          responseDiv.innerHTML = "<p>Getting answer...</p>";
+          const response = await fetch(`${BACKEND_URL}/ask-question`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            mode: "cors",
+            credentials: "include",
+            body: JSON.stringify({ question: question }),
+          });
+
+          let data;
+          try {
+            data = await response.json();
+          } catch (jsonError) {
+            throw new Error("Failed to parse server response");
+          }
+
+          if (response.ok) {
+            responseDiv.innerHTML = `<p><strong>Answer:</strong> ${
+              data?.reply || "No answer received"
+            }</p>`;
+          } else {
+            responseDiv.innerHTML = `<p class="error">Error: ${
+              data?.detail || "Unknown error occurred"
+            }</p>`;
+          }
+        } catch (error) {
+          responseDiv.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+      }
+    </script>
+  </body>
+</html>
