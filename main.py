@@ -73,7 +73,7 @@ def get_conversational_chain():
 
     Answer:
     """
-    model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=1, google_api_key=api_key)
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=1, google_api_key=api_key)
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
     chain = load_qa_chain(model, chain_type="stuff", prompt=prompt)
     return chain
@@ -90,7 +90,20 @@ def user_input(user_question, api_key):
         logger.error(f"Error loading vector store: {str(e)}")
         raise HTTPException(status_code=500, detail="Error processing your question. Please try processing the text again.")
 
+def clear_previous_data():
+    """Clear previous FAISS index and any other stored data"""
+    try:
+        if os.path.exists("faiss_index"):
+            import shutil
+            shutil.rmtree("faiss_index")
+            logger.info("Cleared previous FAISS index")
+    except Exception as e:
+        logger.error(f"Error clearing previous data: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error clearing previous data")
+
 def process_text(text: str, api_key: str):
+    # Clear previous data before processing new text
+    clear_previous_data()
     text_chunks = get_text_chunks(text)
     get_vector_store(text_chunks, api_key)
 
